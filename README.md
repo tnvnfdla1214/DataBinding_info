@@ -30,7 +30,7 @@ XML(Screen) <- Java/Kotlin(Data/Logic) 인 부분을 Binding.java가 연결합�
 
 본격적으로 데이터 바인딩을 구성해봅시다.
 
-## PART 1
+## 기본 
 ### gradle 추가
 
 ```kotlin
@@ -46,7 +46,7 @@ android {
 ### 레이아웃
 데이터 바인딩을 사용하기 위해서 우리가 기존에 알던 레이아웃 구조를 좀 바꾸어야 합니다.
 
-<layout> 태그가 가장 바깥쪽에 위치해있으며 그 안에 <data> 태그와 우리가 사용하던 레이아웃이 들어가는 형태입니다.
+\<layout> 태그가 가장 바깥쪽에 위치해있으며 그 안에 <data> 태그와 우리가 사용하던 레이아웃이 들어가는 형태입니다.
 
 ```kotlin
 <?xml version="1.0" encoding="utf-8"?>
@@ -98,4 +98,3 @@ class MainActivity : AppCompatActivity() {
 
 액티비티 세팅은 매우 간단합니다.
 DataBindingUtil클래스를 통하여 레이아웃을 Binding 하고, binding 인스턴스를 통해 값을 세팅하면 됩니다.
-## PART 2
