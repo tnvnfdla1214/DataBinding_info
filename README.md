@@ -135,6 +135,8 @@ title이란 아이디 값으로 레퍼런스가 생성되는데 거기서 setEna
 
 ### BindingAdapter
 
+다음은 Data binding의 꽃이라 불리는 BindingAdapter설명입니다.
+
 바인딩 어댑터를 사용시 애노테이션 사용하면 public static 필수입니다.
 ```kotlin
 @BindingAdapter(value={"naver"})
