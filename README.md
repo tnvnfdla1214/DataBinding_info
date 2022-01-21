@@ -1,8 +1,8 @@
 # DataBinding
 
-이전 포스터를 봤으면 MVVM에 DataBinding이 얼마나 필요한 것인지 알 것 입니다.
+이번 포스터에서는 Databinding에 대해 재대로 학습하도록 합시다.
 
-그래서 처음부터 끝까지 DataBinding에 대해 알아봅시다.
++ [DataBinding 실제 사용 프로젝트](https://github.com/tnvnfdla1214/DataBinding_ex)
 
 ## DataBinding이란?
 <img src="https://user-images.githubusercontent.com/48902047/146203615-e5a10f43-31af-4eb6-af59-778067b901a3.png"></img>
