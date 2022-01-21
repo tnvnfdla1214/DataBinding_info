@@ -2,6 +2,9 @@
 
 이번 포스터에서는 Databinding에 대해 재대로 학습하도록 합시다.
 
+아래의 목차는 이래 내용을 다 읽고 다시 보시길 추천합니다.
+
++ [DataBinding을 왜 사용하는가](https://github.com/tnvnfdla1214/Databinding_1)
 + [DataBinding 실제 사용 프로젝트](https://github.com/tnvnfdla1214/DataBinding_ex)
 
 ## DataBinding이란?
