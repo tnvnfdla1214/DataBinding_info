@@ -4,34 +4,35 @@
 
 그래서 처음부터 끝까지 DataBinding에 대해 알아봅시다.
 
-## 데이터 바인딩이란?
+## DataBinding이란?
 <img src="https://user-images.githubusercontent.com/48902047/146203615-e5a10f43-31af-4eb6-af59-778067b901a3.png"></img>
 
-XML(Screen) <- Java/Kotlin(Data/Logic) 인 부분을 Binding.java가 연결합니다.
+XML(Screen) <- Java/Kotlin(Data/Logic) 인 부분을 ***Binding.java가 연결합니다.
 
-이부분은 런타임시가 아닌 xml빌드시 생성됩니다.
+이 부분은 런타임 시가 아닌 xml Build 시 생성됩니다.
 
-## 데이터 바인딩 vs 뷰 바인딩
+## DataBinding vs ViewBinding
 
 <img src="https://user-images.githubusercontent.com/48902047/142985022-78607cc8-f8ef-4efc-a57a-18c1cf385d81.png"></img>
-그림에서 알 수 있듯이, 데이터 바인딩은 뷰 바인딩의 역할도 할 수 있을뿐더러
+
+그림에서 알 수 있듯이, DataBinding은 ViewBinding의 역할도 할 뿐만 아니라
 
 추가로 동적 UI 콘텐츠 선언, 양방향 데이터 결합도 지원합니다.
 
 <img src="https://user-images.githubusercontent.com/48902047/142985113-01f61b8c-84e9-4c77-9c11-c32dd74a2bd0.png"></img>
 
-땡! 데이터 바인딩이 기능은 다양하지만
+땡! DataBinding이 기능은 다양하지만
 
-뷰 바인딩이 상대적으로 간단하며 퍼포먼스 효율이 좋고 용량이 절약된다는 장점이 있습니다.
+ViewBinding이 상대적으로 간단하며 퍼포먼스 효율이 좋고 용량이 절약된다는 장점이 있습니다.
 
-실제로 구글 공식문서에서는 단순히 findViewById를 대체하기 위한 거라면, 뷰 바인딩을 사용할 것을 권장하고 있습니다.
+실제로 구글 공식문서에서는 단순히 findViewById를 대체하기 위한 거라면, ViewBinding을 사용할 것을 권장하고 있습니다.
 
 그러니 상황에 맞게 바인딩을 골라 사용하면 됩니다.
 
 본격적으로 데이터 바인딩을 구성해봅시다.
 
 ## 기본 
-### gradle 추가
+### gradle(module 단위) 추가
 
 ```kotlin
 // 안드로이드 스튜디오 4.0 이상
@@ -43,8 +44,47 @@ android {
 }
 ```
 
-### 레이아웃
-데이터 바인딩을 사용하기 위해서 우리가 기존에 알던 레이아웃 구조를 좀 바꾸어야 합니다.
+### findViewByID 제거 (DataBinding, ViewBinding)
+  
+액티비티 세팅을 하기전에 Build->Rebuild Project를 해주어야 합니다.(DataBinding의 거의 유일한 단점이지만 매우 귀찮습니다.) 
+
+그 이유는 위에 설명한것 처럼 컴파일러가 자동으로 생성해주는 바인딩 클래스가 컴파일할때 생성되기 때문입니다.  
+
+자동으로 생성된 Binding 클래스는 다음과 같은 규칙을 따릅니다.
+1. Binding 클래스는 레이아웃 파일의 이름을 기준으로 생성되어 파일 이름을 파스칼 표기법으로 변환하고 그 뒤에 “Binding”을 접미사로 붙입니다.
+ (activity_main.xml > ActivityMain.xml > ActivityMainBinding.java)
+2. 컴포넌트아이디는 “_”를 기준으로 카멜 표기법으로 변환됩니다.  
+
+xml이름이 activity_main인 경우 ActivityMainBinding으로 자동 생성됩니다. 컴포넌트 id값이 tv_sample일 경우 tvSample로 자동 생성됩니다.
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        /*
+        * 기존
+        setContentView(R.layout.activity_main)
+        val tvsample = findViewById(R.id.tv_sample)
+        tvSample.text = "임민규"
+        */
+        
+        /*뷰바인딩*/
+        var binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        binding.tvSample.text = "임민규"//id: tv_sample
+    }
+}
+```
+
+액티비티 세팅은 매우 간단합니다. 
+DataBindingUtil클래스를 통하여 레이아웃을 Binding 하고, binding 인스턴스를 통해 값을 세팅하면 됩니다.
+
+위의 예시는 단순히 findViewByID 정도를 제거하는 방법이었고, 이는 DataBinding이 포함하는 ViewBinding에서 제공하는 기능입니다.
+
+아래에서는 DataBinding으로 점차 view의 참조를 제거하는 방법을 살펴보겠습니다. 
+
+### View의 참조 제거 (DataBinding)
+이를 위해서 우리가 기존에 알던 레이아웃 구조를 좀 바꾸어야 합니다.
 
 \<layout> 태그가 가장 바깥쪽에 위치해있으며 그 안에 <data> 태그와 우리가 사용하던 레이아웃이 들어가는 형태입니다.
 
@@ -53,12 +93,13 @@ android {
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
-    <data>
+   
+   <data>
         <variable
             name="user"
             type="com.example.selfstudy_kotlin.User" />
     </data>
- 
+    
    <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -71,35 +112,46 @@ android {
     </FrameLayout>
 </layout>
 ```
-
-### 액티비티
-  
-액티비티 세팅을 하기전에 Build->Rebuild Project를 해주어야 합니다.(데이터바인딩의 거의 유일한 단점이지만 매우 귀찮습니다.) 그 이유는 위에 설명한것 처럼 컴파일러가 자동으로 생성해주는 바인딩 클래스가 컴파일할때 생성되기 때문입니다.  
-
-자동으로 생성된 Binding 클래스는 다음과 같은 규칙을 따릅니다.
-1. Binding 클래스는 레이아웃 파일의 이름을 기준으로 생성되어 파일 이름을 파스칼 표기법으로 변환하고 그 뒤에 “Binding”을 접미사로 붙입니다.
-2. 컴포넌트아이디는 “_”를 기준으로 카멜 표기법으로 변환됩니다.  
-
-xml이름이 activity_main인 경우 ActivityMainBinding으로 자동 생성됩니다. 컴포넌트 id값이 tv_sample일 경우 tvSample로 자동 생성됩니다.
-
 ```kotlin
 class MainActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        //setContentView(R.layout.activity_main)
-
+        
+        /*
+        * 기존
+        setContentView(R.layout.activity_main)
+        val tvsample = findViewById(R.id.tv_sample)
+        tvSample.text = "임민규"
+        */
+        
+        /*
+        *뷰바인딩
         var binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-        binding.tvSample.text = "임민규입니다."//id: tv_sample
+        binding.tvSample.text = "임민규" //id: tv_sample
+        */
+        
+        /*데이터 바인딩*/
+        var binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        var user = User("임민규", "27", "개발자")
+        binding.setUser(user)
+        
     }
 }
 ```
+뷰바인딩과 데이터 바인딩으로 명시한 예시가 데이터 하나일 경우는 차이가 없어보이지만, 아래 사진과 같이 데이터가 여러개일 경우 view의 참조를 줄여줍니다.
 
-액티비티 세팅은 매우 간단합니다.
-DataBindingUtil클래스를 통하여 레이아웃을 Binding 하고, binding 인스턴스를 통해 값을 세팅하면 됩니다.
-그러나 결국 DataBinding의 규칙을 통해서 SetText를 하게 됩니다. 이제 어떠한 규칙에 의해서 DataBinding이 되는지 알아봅시다.
 <img src="https://user-images.githubusercontent.com/48902047/146318564-9810fb6a-35fb-4b4f-b70d-cd5a223ea31f.png"></img>
+
+android : text = “@{datamodel명.변수명}”으로 원하는 텍스트를 넣을 수 있습니다. 
+
+이런 모양의 코드는 build 시 “이 코드는 DataBinding의 코드이다. 이런 로직도 필요하니 만들어라” 라는 의미로 build됩니다. 
+
+하지만 이때, setText를 java단에서 사용하지 않는다고 setText를 하지 않는 것이 아닙니다. 
+
+DataBinding의 규칙에 따라 Binding클래스 안에 주입 가능한 메서드가 생성되어 우리가 해야할 것들을 대신 해준 것입니다.
+
+이제 어떠한 규칙에 의해서 DataBinding이 되는지 알아봅시다.
+
 
 ## DataBinding, 어떤 기준으로?
 데이터 바인딩이 이루어지는 규칙은 3개지로 구성된다고 합니다. 아래의 순위는 실행우선 순위 순입니다.
@@ -108,6 +160,7 @@ DataBindingUtil클래스를 통하여 레이아웃을 Binding 하고, binding �
 1. BindingAdapter (사용자 지정 Setter)
 2. BindingMethod (이름이 바뀐 Setter)
 3. Set Method (자동 Setter)
+4. 1,2,3이 안되면 빌딩 에러
 
 ### Set Method
 가장 쉬운것부터 집고 넘어 가겠습니다.
@@ -124,18 +177,19 @@ DataBindingUtil클래스를 통하여 레이아웃을 Binding 하고, binding �
 //ActivityMainBindingImpl.java
 this.title.setEnabled(true);
 ```
-좀더 들여다 보면
+좀 더 들여다 보면
 
 <img src="https://user-images.githubusercontent.com/48902047/146329670-649cb7ad-d1c0-45ab-b6cc-49eab7c7262b.png"></img>
 
-title이란 아이디 값으로 레퍼런스가 생성되는데 거기서 setEnable과 boolean 타입을 보고 setEnabled를 생성하게 됩니다.
+[[setEnabled라는 메소드를 쓰는 지, 그 반환값이 boolean값인지]]를 가지고 TextView에 일치사항이 있는지 확인하고 있으면 그것을 사용합니다. 
 
-이것은 커스텀뷰의 추가된 메소드 등을 아래와 같이 사용 가능하게 됩니다.
-<img src="https://user-images.githubusercontent.com/48902047/146330979-08b8aef3-3056-48d3-8e18-e3972be590c5.png"></img>
+<img src="https://user-images.githubusercontent.com/54509842/146667807-bd279a16-73e5-4260-b413-b5ce7ba689df.PNG"></img>
+
+다음과 같이 커스텀뷰의 추가된 메소드가 사용 가능한 것으로 확인하고 활용 가능합니다.
 
 ### BindingAdapter
 
-다음은 Data binding의 꽃이라 불리는 BindingAdapter설명입니다.
+다음은 Databinding의 꽃이라 불리는 BindingAdapter설명입니다.
 
 바인딩 어댑터를 사용시 애노테이션 사용하면 public static 필수입니다.
 ```kotlin
@@ -148,7 +202,7 @@ public static void naverBindingAdapter(TextView, boolean isNaver) {
 
 먼저 정의되어 있는 방법은
 1. TextView에 대해
-2. "naver"라는 xml Atrribute를 정의하는데
+2. "naver"라는 xml Atrribute를 정의하는데 (app:naver라는 속성이 있는지)
 3. Boolean Type의 값을 받을 수 있다.
 
 실제 적용된 xml에 대해
@@ -157,7 +211,7 @@ public static void naverBindingAdapter(TextView, boolean isNaver) {
 
 실제에도 아래와 같이 위 xml 빌드시 생기는 \*\*\*Binding.java 입니다.
 ```kotlin
-SampleBindingAdapter.naverBindingAdater(this.title, true);
+(naverBindingAdater를 가지고 있는 클래스명).naverBindingAdater(this.title, true);
 ```
 BindingAdapter 애노테이션 선언부 입니다.
 ```kotlin
@@ -169,19 +223,24 @@ public @interface BindingAdapter {
 ```
 + value부분 : 이 BindingAdapter가 담당하는 XML Attribute Name List, 다수 개일 경우 메소드 파라미터 순서와 매칭이 되어야 합니다.
 + requireAll : value()의 Attribute가 모두 존재할 때만 처리할지 여부. false일 경우 int/double/float/... 등의 타입의 Attribute가 없을 경우는 값은 0, Object 타입의 Attribute가 없을 경우는 null로 처리됩니다.
-예시로는 View에 대해 visiblity 관리를 할떄 생김,사라짐 두가지만 하지 않지 않습니다. 최소 fade In, fade out 과같이 다양한 작동을 넣고 있습니다.
+
+예시로는 View에 대해 visibility 관리를 할떄 생김,사라짐 두가지만 하지 않지 않습니다. 최소 fade In, fade out 과같이 다양한 작동을 넣고 있습니다.
 
 <img src="https://user-images.githubusercontent.com/48902047/146334328-8b6d5c4e-1156-484f-a498-f4881a17ec3d.png"></img>
 
-이점에서 중요한점은 아래와 같이 **xml과 파라미터의 개수와 위치가 같아야합니다.**
+이점에서 중요한 점은 아래와 같이 **xml과 파라미터의 개수와 위치가 같아야합니다.**
 
 <img src="https://user-images.githubusercontent.com/48902047/146334960-f0ff67cd-02b2-4134-ad89-af2a11d2aa61.png"></img>
 
-만약 모든것을 전부 넘기지 않게 아래 예시와 같이 발표자께서는 requireAll=false 을 사용하였었으나, 다수 개의 Attribute에서 어떤 값만 옵셔널하게 처리가 안되어 아래와 같이 오버로딩하면서 쓰고 있습니다. 만약 안넘겨온 것이 있다면 숫자는 0, object는 null이 넘겨 옵니다.
+모든 것을 전부 넘기지 않게 아래 예시와 같이 발표자님은 requireAll=false 을 사용하였으나, 이 경우 안 넘어온 것이 있다면 숫자는 0, object는 null이 넘어옵니다.
 ```kotlin
-@BindingAdapter(value={"android:visibility", "animType", "animDuration"}) //원래 쓰던것
+@BindingAdapter(value={"android:visibility", "animType", "animDuration"}, requireAll = false) //원래 쓰던 것
 public static void newAnimationBindingMethod(View view, boolean visibility, @AnimType int animType, int animDuration) { ... }
-
+```
+이러한 경우 사용하지 않는 파라미터에 기본값이 들어와 특정 Attribute만 옵셔널하게 처리 할 수 없기 때문에 아래와 같이 오버로딩해서 씁니다.
+```kotlin
+@BindingAdapter(value={"android:visibility", "animType", "animDuration"}) //원래 쓰던 것
+public static void newAnimationBindingMethod(View view, boolean visibility, @AnimType int animType, int animDuration) { ... }
 @BindingAdapter(value={"android:visibility", "animType"}) //발표자님이 바꾸신것
 public static void newAnimationBindingMethod(View view, boolean visibility, @AnimType int animType) { ... }
 ```
@@ -189,11 +248,11 @@ public static void newAnimationBindingMethod(View view, boolean visibility, @Ani
 #### Observable
 <img src="https://user-images.githubusercontent.com/48902047/146635440-3dcfd194-9e82-4c90-bc7f-f8cc5ae34f22.png"></img>
 
-Java/Kotlin 등에서 변경시 XML에 알려주길 위해 Observable 사용합니다. (DataBinding이 아니라면 LiveData해도 됨.)
+Java/Kotlin 등에서 변경 시 XML에 알려주기 위해 Observable 사용합니다. (DataBinding이 아니라면 LiveData해도 됨.)
 
 <img src="https://user-images.githubusercontent.com/48902047/146635496-40566418-ab37-4194-b063-5fab82f05380.png"></img>
 
-위에는 Observable 인터페이스 입니다. 그러나 만드는것은 까다롭기에 구글에서 사용하기 편하게 BaseObservable 제공합니다. BaseObservable은 다음과 같습니다.
+위에는 Observable 인터페이스 입니다. 그러나 만드는 것은 까다롭기에 구글에서 사용하기 편하게 BaseObservable을 제공합니다. BaseObservable은 다음과 같습니다.
 
 <img src="https://user-images.githubusercontent.com/48902047/146635558-4f0e683c-4bb3-415e-823f-f6c4108c7acc.png"></img>
 
@@ -201,15 +260,13 @@ Java/Kotlin 등에서 변경시 XML에 알려주길 위해 Observable 사용합�
 
 
 ```kotlin
-public static class SampleModel { //변경전
+public static class SampleModel { //변경 전
     private String title;
     public SampleMode(String title) {
         this.title = title;
     }
 }
-
-
-public static class SampleModel extends BaseObservalbe { //변경 후
+public static class SampleModel extends BaseObservable { //변경 후
     private String title;
     public SampleMode(String title) {
         this.title = title;
@@ -224,9 +281,9 @@ public static class SampleModel extends BaseObservalbe { //변경 후
     }
 }
 ```
-+ BaseObservalbe 추가
++ BaseObservable 추가
 + Getter/Setter 추가
-+ @Binding 추가
++ @Bindable 추가
 
 위에서 코드를 빌드시 BR(Binding Resource)이 생성이 됩니다.
 
@@ -236,13 +293,12 @@ public class BR {
    public static final int titile = 1;
    public static final int model = 2;
 }
-
 ```
 <img src="https://user-images.githubusercontent.com/48902047/146635850-806cc34d-e2ac-4d21-82ca-bbe078462f9e.png"></img>
 
 위 SampleModel 객체 생성 후 setTitle 메소드 사용시 notifyPropertyChanged()를 통해 Binding.java에 변경이 전달 됩니다.
 
-Binding.java에서는 getTitle()을 통해 바뀐 값을 전달받습니다.
+Binding.java에서는 getTitle()을 통해 바뀐 값을 전달 받습니다.
 
 그래도 이렇게 매번 정리하기 불편하므로 구글에서는 아래와 같은 것들을 제공합니다.
 
@@ -262,18 +318,21 @@ SampleModel을 바꿔봅시다.
 
 ```kotlin
 public static class SampleModel extends BaseObservalbe {
-    //private String title; 변경전
-    public final ObservableFiedl<String> title; //변경 후
+    //private String title; 변경 전
+    public final ObservableField<String> title; //변경 후
     public SampleMode(String title) {
         this.title = new ObservableField<>(title);
     }
 }
 ```
+
+이렇게 Observable 처리를 해주면, BindingClass의 setMethod가 "아 observable한 것이 들어와서 변경을 알아야하는구나" 라고 인지하여 notifyChange()메서드를 오버라이드 합니다. 
+
 #### Listener를 Binding 하는 법
 
 <img src="https://user-images.githubusercontent.com/48902047/146636110-914cdd92-f629-4574-b325-9180f06b611c.png"></img>
     
-이제 ClickListner들을 어떻게 Binding하는 법을 알아봅시다. 총 세가지가 있습니다. 그중 3가지를 Object를 직접 넘겨주는 방식과 메서드를 View들과 연결하여 넘겨주는 두가지로 나누는 방법이 있습니다.
+이제 ClickListner들을 어떻게 Binding하는 법을 알아봅시다. 총 세가지가 있습니다. 그 중 3가지를 Object를 직접 넘겨주는 방식과 메서드를 View들과 연결하여 넘겨주는 두가지로 나누는 방법이 있습니다.
 ##### Object 전달
     
 먼저 Object 방식입니다. 
@@ -286,7 +345,7 @@ public static class SampleModel extends BaseObservalbe {
         android:onClick="@{model.clickListener}" />
 ```
     
-위와 같이 사용시 BindingMethod 사용이 필요합니다.
+위와 같이 사용시 BindingMethod(이름이 바뀐 Setter) 사용이 필요합니다.
     
 ```kotlin
 @BindingMethod(type=View.class, attribute="android:onClick", method="setOnClickListener")
@@ -307,19 +366,40 @@ public static class SampleModel extends BaseObservalbe {
     
 ```kotlin
 public class MainActivity extend AppCompatActivity {
-    public void onClicButton(View button) { //둘다 사용가능
-        //선언부의 view button은 람다에서 제거 가능
+
+    /*일반식 */
+    public void onClickButton(View button) { //둘다 사용가능
+        
     }
-    
-    public void onClicButton() { //첫번쨰는 사용 불가
-        //선언부의 view button은 람다에서 제거 가능
+   
+}
+```
+
+일반식과 람다식이 있는데, 발표자 분은 람다식을 지향하셨습니다. 왜냐하면 
+
+"어떤 버튼이 어떤 상황에서 온 것이다" 가 식별이 되면, 
+
+1번은 해당 리스너의 메서드 성분들을 전부 충족시켰을 때만 사용이 가능하므로 사용할 수 없습니다. 
+
+하지만 () -> model.onClickButton()과 같이 람다방식을 쓰는 것은 해당 리스너의 성분을 받는 메서드를 그때 그때 만들 필요 없이 하나로 다음과 같이 사용하기 때문입니다.
+
+```kotlin
+<Button
+        ...
+        android:onClick="@{()->model.clickListener()}" /> //두번째 방식
+```
+```kotlin
+public class MainActivity extend AppCompatActivity {
+
+    /*2번 */
+    public void onClickButton() { //두번째 방식만 사용가능
     }
 }
 ```
-그러니 **발표자는 람다 방식으로 사용하는게 정신 건강에 좋다고 설명합니다.**
+
+그렇기 때문에 발표자 분은 **람다 방식으로 사용하는게 정신 건강에 좋다**고 설명합니다.
 
 ##### CustomView + Custom Listener
-
 <img src="https://user-images.githubusercontent.com/48902047/146636383-87840506-eec1-4219-a787-0062ba94fc1f.png"></img>
     
 ```kotlin
@@ -334,10 +414,8 @@ public class CustomTextView extends AppCompatTextView {
 public void setOnCustomEventListener(CustomTextView view, CustomTextView.OnCustomEventListener listener) {
     view.setOnCustomEventListener(listener);
 }
-
 //또는 
-
-@BindingMethod({
+@BindingMethods({
     @BindingMethod(type=CustomTextView.class, attribute="onCustomEvent", method="setOnCustomEventListener")
 })
 ```
@@ -351,7 +429,7 @@ public void setOnCustomEventListener(CustomTextView view, CustomTextView.OnCusto
 
 <img src="https://user-images.githubusercontent.com/48902047/146636444-5eb0526a-fa9a-4453-a914-c75987db62b4.png"></img>
 
-대부분 리스너들은 return이 void 형식이나 onLongClick 일경우 return이 boolean형식이라 잘못 쓸 경우 이상한 오류 발생합니다. 아직 데이터 바인딩에 대한 오류 지원은 미흡함으로 주의해야 합니다. 그러니 아래와 같이 의심을 해야 합니다.
+대부분 리스너들은 return이 void 형식이나 onLongClick 일경우 return이 boolean형식이라 잘못 쓸 경우 이상한 오류가 발생합니다. 아직 데이터 바인딩에 대한 오류 지원은 미흡함으로 주의해야 합니다. 그러니 아래와 같이 의심을 해야 합니다.
 
 <img src="https://user-images.githubusercontent.com/48902047/146636490-bed719ae-282d-4241-8cdb-186d8d943dfb.png"></img>
 
@@ -373,7 +451,9 @@ public void setOnCustomEventListener(CustomTextView view, CustomTextView.OnCusto
 + Two-way Binding : 둘다
 
 #### Two-way Binding 예시
+
 <img src="https://user-images.githubusercontent.com/48902047/146636790-2bedb0a7-488b-41f5-b1bf-8895b7c9a5c7.png"></img>
+
 위에 예시는 EditText에 값을 입력시 TextView에 값이 자동으로 입력되는 예시입니다. 또한 위의 버튼을 누를 시 EditText와 TextView를 초기화 해주는 예시입니다.
 ```kotlin
 public class TwowayBindingModel {
@@ -407,6 +487,7 @@ public class MainActivity {
     </LinearLayout>
 </layout>
 ```
+
 양방향과 단반향의 차이는 아래와 같습니다.
 
 양방향 바인딩 : @={model.title}
@@ -417,14 +498,12 @@ public class MainActivity {
 
 <img src="https://user-images.githubusercontent.com/48902047/146637532-786b2921-7319-4911-8910-5502bc10c462.png"></img>
 
-위에 그림은 단방향 바인딩 순서 입니다. 반대 아래 그림은 양당향 그림입니다.
+위에 그림은 단방향 바인딩 순서 입니다. 아래 그림은 양방향 그림입니다.
 
 <img src="https://user-images.githubusercontent.com/48902047/146637595-a03be281-b088-46c7-931d-1a6abefafb37.png"></img>
 
-EditText는 양방향 바인딩이라 텍스트 수정시 InverseBinding이 이루어지며, 이 후 변경된 값으로 Binding이 이루어집니다. 알아야 할 점은 실제 코드에서 EditText쪽으로 전달 해 주지 않습니다.
-
+EditText는 양방향 바인딩이라 텍스트 수정시 InverseBinding이 이루어지며, 이 후 변경된 값으로 Binding이 이루어집니다. 알아야 할 점은 실제 코드에서 EditText쪽으로 전달해 주지 않습니다.
 아래는 Binding과 InverseBinding의 정의된 코드입니다.
-
 + Binding
 ```kotlin
 @BindingAdapter("android:text")
@@ -442,9 +521,9 @@ public static String getText(TextView textView) {
 
 <img src="https://user-images.githubusercontent.com/48902047/146637752-be1d6e31-3faa-44f3-a450-c2cb28cbdbdc.png"></img>
 
-위의 코드를 볼 시 위 그림과 같이 크게 두가지의 차이점이 있습니다.
+위의 코드를 볼 시 위 그림과 같이 크게 두 가지의 차이점이 있습니다.
 이유는 binding 같은 경우 "값을 받아서 UI 에 값을 넣는다","UI 작업을 업데이트 시킨고 UI작업을 한다" 라고 생각하고 있는데
-InverseBinding 같은 경우 "UI의 변화, UI 이벤트를 감지해서 값을 돌려준다"라고 반대방향입니다. 그렇기에 파라미터 값을 받을 필요없고 반환값이 필요합니다.
+InverseBinding 같은 경우 "UI의 변화, UI 이벤트를 감지해서 값을 돌려준다"라고 반대 방향입니다. 그렇기에 파라미터 값을 받을 필요없고 반환값이 필요합니다.
 
 아래를 보면 
 
@@ -464,7 +543,7 @@ public @interface InverseBindingAdapter {
     String event() default ""; //중요
 }
 ```
-이처럼 Binding 은 배열임에 반해 InverseBinding는 하나의 String이므로 한번에 하나만 가능하다.
+이처럼 Binding은 복합적인 이벤트를 가지고 와서 view에 적용할 수 있어서 String[]인 것에 반해, InverseBinding는 하나의 attributes는 하나의 이벤트로 처리해야 하기 때문에 String 입니다.
 
 다음은 중요라 표시한 event의 대한 설명이다.
 
@@ -472,7 +551,7 @@ public @interface InverseBindingAdapter {
 
 <img src="https://user-images.githubusercontent.com/48902047/146638201-301143f5-1063-439f-805b-e08449f535af.png"></img>
 
-evnet는 따로 BindingAdapt를 만들어 정의해 주어애 합니다.
+event는 따로 BindingAdapter를 만들어 정의해 주어애 합니다.
 
 <img src="https://user-images.githubusercontent.com/48902047/146638349-850fd678-4678-4269-bce0-835b66c22abd.png"></img>
 <img src="https://user-images.githubusercontent.com/48902047/146638408-a42d3b57-3b6b-428f-a1c0-94df946a8a3e.png"></img>
@@ -483,9 +562,8 @@ event사용시 특이하게 InverseBindingListener라는 파라미터를 받아�
 ```kotlin
 @InverseBindingAdapter(attribute={"android:text", event="textEvent"})
 public static String getText(TextView textView) {
-    return tetView.getText().toString();
+    return textView.getText().toString();
 }
-
 @BindingAdapter("textEvent")
 public static void setTextEvent(TextView textView, final InverseBindingListener listener) {
     textView.addTextChangedListener(new TextWatcher() {
@@ -497,6 +575,7 @@ public static void setTextEvent(TextView textView, final InverseBindingListener 
 }
 ```
 위 구현의 동작 흐름입니다.
+
 <img src="https://user-images.githubusercontent.com/48902047/146638552-a84ffdd6-01b6-4339-b197-35422b7e815b.png"></img>
 
 1. EditText에 텍스트 변경
@@ -505,7 +584,7 @@ public static void setTextEvent(TextView textView, final InverseBindingListener 
 4. TwowayBindingModel의 ObservableField인 text에서 값이 변경됨을 알림.
 5. @BindingAdapter("android:text") 으로 EditText와 TextView에 변경된 값을 설정함.
 
-하지만 **위와 같이 처리시 5번에서 양방향으로 들어오면 변경이라 생각하여 다시 1번이 발생하게 되어 계속 반복하게 무한 루프하게 됩니다.**
+하지만 **위와 같이 처리시 5번에서 양방향으로 들어오면 BindingAdapter에서 이를 변경이라 생각하여 다시 1번이 발생하게 되어 계속 반복하게 무한 루프하게 됩니다.**
 구글에서도 이에 대한 직접 로직을 추가하여 막아야 한다고 그런 매직은 없다고 합니다. (TextViewBindingAdpater 참조)
 
 TextViewBindingAdpater 에서는 이전과 변경되는 텍스트 값을 비교하여 예외처리를 추가합니다.
@@ -523,11 +602,33 @@ TextViewBindingAdpater 에서는 이전과 변경되는 텍스트 값을 비교�
 
 **"결국은 어떻게 나눠서 개발할 것인가"** 가 목표였습니다.
 
-이번 챕터는 architecture나 패턴에 대한 부분은 제외하고 **DataBinding 관점** 과 **View 관점**에서만 논하기로 합시다.
+이번 챕터는 architecture나 패턴에 대한 부분은 제외하고 **DataBinding 관점** 과 **View 관점**에서만 논합니다.
 
 <img src="https://user-images.githubusercontent.com/48902047/146638787-223dffb0-e68c-4df2-bc3a-6abaf7352b51.png"></img>
 
 결국은 이것을 해결하기 위해 이번 챕터의 제목처럼  \<include>와 \<ViewStub> 를 잘 사용하면 됩니다.
+
+#### include
+재사용 하고 싶은 컴포넌트를 레이아웃에 넣을 때 include 태그를 사용합니다. (예 상단바와 같이 재사용하는 컴포넌트)
+```kotlin
+   <include
+        layout="@layout/include_top_bar"/>
+```
+
+#### ViewStub
+VideStub 는 사이즈가 0인 더미 뷰입니다. 기능은 include 와 동일하지만, setVisibility(int) 또는 inflate 되었을 때 view 를 그리기 시작합니다. lazy include 라고 생각하시면 됩니다.
+```kotlin
+   <ViewStub
+    android:id="@+id/stub"
+    android:layout="@layout/include_top_bar"
+    android:layout_width="match_parent"
+    android:layout_height="?android:attr/actionBarSize"/>
+```
+```kotlin
+ViewStub stub = findViewById(R.id.stub);
+View inflated = stub.inflate();
+TextView tvIncludeTopBar = inflated.findViewById(R.id.tvIncludeTopBar);
+```
 
 아래의 화면은 프리즌 화면인데 \<include>와 \<ViewStub>으로 쪼개면 아래와 같이 됩니다.
 
@@ -552,7 +653,7 @@ main.xml -> include1.xml
 <img src="https://user-images.githubusercontent.com/48902047/146639369-0cee6d88-d5c8-4855-9b79-b1bd9dee728a.png"></img>
 <img src="https://user-images.githubusercontent.com/48902047/146639382-de662629-7b92-4f1d-85d5-9eebd6a77374.png"></img>
 
-메인에서 하위로 데이터를 전달해야 하므로 데이터도 동일하게 뎁스를 만들어서 사용합니다.
+메인에서 하위로 데이터를 전달해야 하므로 데이터도 동일하게 depth를 만들어서 사용합니다.
 
 MainBindingModel -> IncludeBindingModel
 
@@ -562,7 +663,6 @@ MainBindingModel -> IncludeBindingModel
 public static String getText(TextView textView) {
     return tetView.getText().toString();
 }
-
 @BindingAdapter("textEvent")
 public static void setTextEvent(TextView textView, final InverseBindingListener listener) {
     textView.addTextChangedListener(new TextWatcher() {
@@ -595,11 +695,11 @@ public static void setTextEvent(TextView textView, final InverseBindingListener 
 <img src="https://user-images.githubusercontent.com/48902047/146639668-f826883a-4202-42af-821b-e86a599128ff.png"></img>
 <img src="https://user-images.githubusercontent.com/48902047/146639674-331befb0-91c1-4712-8b6a-16f79b33db59.png"></img>
 
-프리즘은 각 View별로 ViewModel 1:1 매핑하여 개발했다 합니다.
+프리즘은 각 View별로 ViewModel 1:1 매핑하여 개발했다고 합니다.
 
-ViewStub 바인딩시 include보다 까다롭습니다.
+ViewStub 바인딩 시 include보다 까다롭습니다.
 
-ViewStub도 View 상속하다보니 일반적인 BindingAdapter를 사용가능하나, ViewStub 특성을 살리는 부분은 ViewStub를 파라미터로 받는 BindingAdpater로 구현해야 합니다.
+ViewStub도 View 상속하다보니 일반적인 BindingAdapter를 사용 가능하나, ViewStub 특성을 살리는 부분은 ViewStub를 파라미터로 받는 BindingAdpater로 구현해야 합니다.
 
 하지만 이는 Gradle 3.1.0이상부터 되는 것으로 보여 그 이하의 환경에서는 편법을 써야 합니다.
 
@@ -642,5 +742,3 @@ Q. 데이터바인딩을 사용하게 되면서 코드 가독성이 떨어진 �
 이건 취향차이기인 해요. 저는 오히려 코드 가독성이 올라가는 부분도 있다라고 생각합니다. View에 대한 로직은 모두 xml에서 볼 수 있다라고 생각할 수 있으니까요. 로직이 복잡해지면 xml도, 코드에서도 복잡하긴 한건 매한가지 이긴 하니까…?
 
 사실. 이 DataBinding은 코드의 가독성을 높인다. 개발 생산성을 높인다.의 이야기와는 맞진 않다고 생각합니다. 정확하게는 Java/코틀린 코드에서 View에 대한 참조를 제거하는 도구이다. 라고 보시는 쪽이 맞긴 해요. 또한… 이런저런 장점들이 있기는 한데… 가장 크게 예를 들면 Image Loading 같은 경우에요. 그냥 코드로 작성하게 되는경우 Image를 Load하는 모든 지점에서 자바/코틀린으로 Loading 로직을 작성해주셔야 하는데 Binding을 이용한다면 이런식으로 작성하면 끝! 할수도 있거든요
-
-막상 열심히 써보면 편해요. 굉장히 편합니다. View를 사용할 때 thread 걱정도 사라지고요. 얘가 NullPointer도 잡아주고요… 내 손으로 작성하는 코드의 양을 줄여서 실수를 줄여주는 부분도 있습니다. 이제 저는… Binding 없이는 코딩이 좀 어렵다. 생각이 들 정도로 적어도 제게는 정말 편리한 도구입니다
